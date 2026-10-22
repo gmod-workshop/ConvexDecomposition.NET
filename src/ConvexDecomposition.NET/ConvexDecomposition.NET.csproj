@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ConvexDecomposition</RootNamespace>
+    <PackageId>ConvexDecomposition.NET</PackageId>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Description>Core of the .NET convex decomposition packages (CuACD.NET, CoACD.NET, VHACD.NET): Mesh and IConvexDecomposer, plus backend-independent tools: GPU-to-CPU fallback, result caching, hull post-processing (hull count and vertex limits, margins), convex hulls, mass properties, mesh checks and OBJ I/O.</Description>
+    <PackageTags>convex-decomposition;acd;coacd;cuacd;vhacd;convex-hull;physics;collision;mesh</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ConvexDecomposition.NET.Tests" />
+    <Compile Include="$(RepoRoot)src\Shared\MeshValidation.cs" Link="Shared\MeshValidation.cs" />
+    <None Update="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

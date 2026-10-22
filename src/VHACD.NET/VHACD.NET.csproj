@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>VHACD</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>VHACD.NET</PackageId>
+    <!-- Upstream version; bump the 4th component for wrapper-only releases. -->
+    <VersionPrefix>4.1.0</VersionPrefix>
+    <Description>.NET bindings for V-HACD 4 (Voxelized Hierarchical Approximate Convex Decomposition), the decomposition behind many game engine and physics toolchains. Fast and voxel-based; runs on the CPU with no extra runtime dependencies.</Description>
+    <PackageTags>convex-decomposition;acd;vhacd;v-hacd;physics;collision;mesh;geometry</PackageTags>
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageReleaseNotes>Wraps V-HACD 4.1 at upstream commit f900e42, which includes the shrink-wrap scale fix (#154) made after the v4.1.0 tag.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="VHACD.NET.Tests" />
+    <Compile Include="$(RepoRoot)src\Shared\MeshValidation.cs" Link="Shared\MeshValidation.cs" />
+    <ProjectReference Include="..\ConvexDecomposition.NET\ConvexDecomposition.NET.csproj" />
+    <None Update="README.md" Pack="true" PackagePath="\" />
+    <None Include="$(RepoRoot)external\vhacd\LICENSE" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NativeAsset Include="$(NativeArtifactsDir)win-x64\vhacd_native.dll" Rid="win-x64" />
+    <NativeAsset Include="$(NativeArtifactsDir)linux-x64\libvhacd_native.so" Rid="linux-x64" />
+    <NativeAsset Include="$(NativeArtifactsDir)linux-arm64\libvhacd_native.so" Rid="linux-arm64" />
+    <NativeAsset Include="$(NativeArtifactsDir)osx-arm64\libvhacd_native.dylib" Rid="osx-arm64" />
+  </ItemGroup>
+  <Import Project="$(RepoRoot)eng\Native.targets" />
+
+</Project>

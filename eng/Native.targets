@@ -1,0 +1,19 @@
+<Project>
+  <!--
+    Packs a project's native libraries. Before importing, the project declares
+    @(NativeAsset) items (a file under $(NativeArtifactsDir)<rid>\) with Rid
+    metadata. Assets that exist are packed as runtimes/<rid>/native/*, and the
+    current platform's asset is copied next to the build output for local runs
+    and tests. Pass -p:RequireAllNatives=true for release packs so a missing
+    platform fails instead of silently producing a partial package.
+  -->
+  <ItemGroup>
+    <None Include="@(NativeAsset->Exists())" Pack="true" PackagePath="runtimes\%(Rid)\native\" Visible="false" />
+    <None Include="@(NativeAsset->Exists()->WithMetadataValue('Rid', '$(NETCoreSdkRuntimeIdentifier)'))"
+          Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Pack="false" Visible="false" />
+  </ItemGroup>
+
+  <Target Name="CheckNativeAssets" BeforeTargets="GenerateNuspec" Condition="'$(RequireAllNatives)' == 'true'">
+    <Error Condition="!Exists('%(NativeAsset.FullPath)')" Text="Missing native library for %(NativeAsset.Rid): %(NativeAsset.FullPath)" />
+  </Target>
+</Project>

@@ -1,0 +1,126 @@
+name: Build and publish
+
+# Builds the native shims for every platform, packs ConvexDecomposition.NET,
+# CuACD.NET, CoACD.NET and VHACD.NET, and pushes them to nuget.org when a v*
+# tag is pushed (requires the NUGET_API_KEY repository secret). Packages whose
+# version is already on nuget.org are skipped, so bump only what changed.
+#
+# The core, CoACD and V-HACD tests run on every platform; CuACD tests need an
+# NVIDIA GPU (hosted runners have none), so run them locally with `dotnet test`.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native:
+    name: native ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64,     os: windows-2022 }
+          - { rid: linux-x64,   os: ubuntu-22.04 }
+          - { rid: linux-arm64, os: ubuntu-22.04-arm }
+          - { rid: osx-arm64,   os: macos-15 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # CoACD's FetchContent dependencies (OpenVDB, TBB, Boost, ...) dominate
+      # build time; cache them per platform and CoACD revision.
+      - uses: actions/cache@v4
+        with:
+          path: build/coacd-${{ matrix.rid }}/_deps
+          key: coacd-deps-${{ matrix.rid }}-${{ hashFiles('.gitmodules', 'native/coacd/CMakeLists.txt') }}-${{ github.sha }}
+          restore-keys: coacd-deps-${{ matrix.rid }}-${{ hashFiles('.gitmodules', 'native/coacd/CMakeLists.txt') }}-
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/build-native.ps1
+
+      # CuACD links libcuda; only its link stub is needed (headers come from
+      # NVIDIA's pip wheel inside CMake). It carries SONAME libcuda.so.1.
+      - name: Install libcuda stub (linux-x64)
+        if: matrix.rid == 'linux-x64'
+        run: |
+          wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          sudo apt-get update -q
+          sudo apt-get install -y -q cuda-driver-dev-12-8
+          echo "CMAKE_ARGS=-DCUDA_DRIVER_LIBRARY=$(find /usr/local -name libcuda.so -path '*stubs*' | head -1)" >> "$GITHUB_ENV"
+
+      - name: Build (Linux / macOS)
+        if: runner.os != 'Windows'
+        env:
+          MACOSX_DEPLOYMENT_TARGET: '11.0'
+        run: bash scripts/build-native.sh
+
+      - name: Check linkage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          for f in artifacts/native/${{ matrix.rid }}/*.so; do
+            echo "$f"; readelf -d "$f" | grep NEEDED
+            # Only the C API may be exported (no statically linked libstdc++ symbols).
+            extra=$(nm -D --defined-only "$f" | awk '{print $3}' | grep -vE '^(cuacd_|coacd_net_|vhacd_net_)' || true)
+            if [ -n "$extra" ]; then echo "unexpected exports in $f:"; echo "$extra"; exit 1; fi
+          done
+          if [ -f artifacts/native/linux-x64/libcuacd_native.so ]; then
+            readelf -d artifacts/native/linux-x64/libcuacd_native.so | grep -q 'libcuda.so.1'
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Test
+        run: |
+          dotnet test tests/ConvexDecomposition.NET.Tests -c Release
+          dotnet test tests/CoACD.NET.Tests -c Release
+          dotnet test tests/VHACD.NET.Tests -c Release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.rid }}
+          path: artifacts/native/${{ matrix.rid }}/
+
+  pack:
+    needs: native
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: artifacts/native
+      - name: Arrange natives
+        run: |
+          cd artifacts/native
+          for d in native-*; do mv "$d" "${d#native-}"; done
+          find . -type f
+      - name: Version suffix
+        run: |
+          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
+            echo "PACK_ARGS=--version-suffix ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          fi
+      - name: Build
+        run: dotnet build -c Release
+      - name: Pack
+        run: dotnet pack -c Release -o out --no-build -p:RequireAllNatives=true $PACK_ARGS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: out/*.nupkg
+      - name: Push to nuget.org
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: dotnet nuget push "out/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

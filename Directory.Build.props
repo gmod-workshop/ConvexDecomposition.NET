@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- Native shims built by scripts/build-native.* land in artifacts/native/<rid>/. -->
+    <NativeArtifactsDir Condition="'$(NativeArtifactsDir)' == ''">$(RepoRoot)artifacts\native\</NativeArtifactsDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsPackable)' != 'false' And $(MSBuildProjectDirectory.StartsWith('$(RepoRoot)src'))">
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Authors>David Katz</Authors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/gmod-workshop/ConvexDecomposition.NET</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gmod-workshop/ConvexDecomposition.NET.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

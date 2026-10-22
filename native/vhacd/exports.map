@@ -1,0 +1,5 @@
+/* Export only the C API; libstdc++ template instantiations stay local. */
+{
+  global: vhacd_net_*;
+  local: *;
+};

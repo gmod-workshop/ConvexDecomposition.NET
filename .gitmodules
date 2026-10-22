@@ -1,0 +1,9 @@
+[submodule "external/cuacd"]
+	path = external/cuacd
+	url = https://github.com/eliphatfs/cuacd
+[submodule "external/coacd"]
+	path = external/coacd
+	url = https://github.com/SarahWeiii/CoACD
+[submodule "external/vhacd"]
+	path = external/vhacd
+	url = https://github.com/kmammou/v-hacd

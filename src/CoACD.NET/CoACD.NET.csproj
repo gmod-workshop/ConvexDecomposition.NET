@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CoACD</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>CoACD.NET</PackageId>
+    <!-- Upstream version; bump the 4th component for wrapper-only releases. -->
+    <VersionPrefix>1.0.14</VersionPrefix>
+    <Description>.NET bindings for CoACD (Approximate Convex Decomposition for 3D Meshes with Collision-Aware Concavity and Tree Search, SIGGRAPH 2022). Built from source with an exception-safe native shim; runs on the CPU with no extra runtime dependencies.</Description>
+    <PackageTags>convex-decomposition;acd;coacd;physics;collision;mesh;geometry;vhacd</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReleaseNotes>Wraps CoACD 1.0.14 (upstream commit 1401ce2).</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CoACD.NET.Tests" />
+    <Compile Include="$(RepoRoot)src\Shared\MeshValidation.cs" Link="Shared\MeshValidation.cs" />
+    <ProjectReference Include="..\ConvexDecomposition.NET\ConvexDecomposition.NET.csproj" />
+    <None Update="README.md" Pack="true" PackagePath="\" />
+    <None Include="$(RepoRoot)external\coacd\LICENSE" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NativeAsset Include="$(NativeArtifactsDir)win-x64\coacd_native.dll" Rid="win-x64" />
+    <NativeAsset Include="$(NativeArtifactsDir)linux-x64\libcoacd_native.so" Rid="linux-x64" />
+    <NativeAsset Include="$(NativeArtifactsDir)linux-arm64\libcoacd_native.so" Rid="linux-arm64" />
+    <NativeAsset Include="$(NativeArtifactsDir)osx-arm64\libcoacd_native.dylib" Rid="osx-arm64" />
+  </ItemGroup>
+  <Import Project="$(RepoRoot)eng\Native.targets" />
+
+</Project>

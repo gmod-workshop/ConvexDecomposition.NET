@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CuACD</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>CuACD.NET</PackageId>
+    <!-- Upstream version; bump the 4th component for wrapper-only releases. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Description>.NET bindings for CuACD, a fully GPU-resident approximate convex decomposition (ACD) of 3D meshes. A CUDA-accelerated alternative to CoACD, typically 50-100x faster. Requires an NVIDIA GPU and driver; no CUDA toolkit needed.</Description>
+    <PackageTags>convex-decomposition;acd;coacd;cuacd;cuda;gpu;physics;collision;mesh;geometry</PackageTags>
+    <PackageLicenseExpression>LGPL-2.1-or-later</PackageLicenseExpression>
+    <PackageReleaseNotes>Wraps CuACD 0.1.0 (upstream commit 13a00e2).</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)src\Shared\MeshValidation.cs" Link="Shared\MeshValidation.cs" />
+    <ProjectReference Include="..\ConvexDecomposition.NET\ConvexDecomposition.NET.csproj" />
+    <None Update="README.md" Pack="true" PackagePath="\" />
+    <None Include="$(RepoRoot)external\cuacd\LICENSE" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    Kernel fatbinary (PTX + cubins, sm_70..sm_120) — pure GPU code, identical
+    for every platform. It is taken verbatim from the official cuacd 0.1.0
+    wheel on PyPI and embedded once in this assembly; the native shim gets a
+    pointer to it at runtime. Set CuAcdFatbinPath to use a self-built one.
+    Must match the host code version (external/cuacd submodule).
+  -->
+  <PropertyGroup>
+    <CuAcdDepsDir>$(RepoRoot)build\deps\</CuAcdDepsDir>
+    <CuAcdWheelUrl>https://files.pythonhosted.org/packages/7d/f4/14718adfba5832408302b64b40de4074fafa7c854de3ab83ec638d414b83/cuacd-0.1.0-cp310-abi3-win_amd64.whl</CuAcdWheelUrl>
+    <CuAcdWheelSha256>B134D54CC45A9C034777717D2B47CA217FE55E028EEAB8CCAF9788A6D217CAD3</CuAcdWheelSha256>
+    <CuAcdFatbinSha256>CD210097D42CBF06B6C9F1499784251835D317FDBE87CE3CA47DD2EC3D82F8B7</CuAcdFatbinSha256>
+    <CuAcdFatbinPath Condition="'$(CuAcdFatbinPath)' == ''">$(CuAcdDepsDir)cuacd-0.1.0\cuacd\kernels.fatbin</CuAcdFatbinPath>
+  </PropertyGroup>
+
+  <Target Name="CuAcdFetchFatbin" BeforeTargets="BeforeBuild" Condition="!Exists('$(CuAcdFatbinPath)')">
+    <DownloadFile SourceUrl="$(CuAcdWheelUrl)" DestinationFolder="$(CuAcdDepsDir)" DestinationFileName="cuacd-0.1.0.whl" Retries="3" />
+    <GetFileHash Files="$(CuAcdDepsDir)cuacd-0.1.0.whl" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_CuAcdWheelHash" />
+    </GetFileHash>
+    <Error Condition="'$(_CuAcdWheelHash)' != '$(CuAcdWheelSha256)'" Text="cuacd wheel hash mismatch: got $(_CuAcdWheelHash)" />
+    <Unzip SourceFiles="$(CuAcdDepsDir)cuacd-0.1.0.whl" DestinationFolder="$(CuAcdDepsDir)cuacd-0.1.0" />
+    <Delete Files="$(CuAcdDepsDir)cuacd-0.1.0.whl" />
+    <GetFileHash Files="$(CuAcdFatbinPath)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_CuAcdFatbinHash" />
+    </GetFileHash>
+    <Error Condition="'$(_CuAcdFatbinHash)' != '$(CuAcdFatbinSha256)'" Text="kernels.fatbin hash mismatch: got $(_CuAcdFatbinHash)" />
+  </Target>
+
+  <Target Name="CuAcdEmbedFatbin" BeforeTargets="BeforeBuild" DependsOnTargets="CuAcdFetchFatbin">
+    <ItemGroup>
+      <EmbeddedResource Include="$(CuAcdFatbinPath)" LogicalName="CuACD.kernels.fatbin" WithCulture="false" Type="Non-Resx" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <NativeAsset Include="$(NativeArtifactsDir)win-x64\cuacd_native.dll" Rid="win-x64" />
+    <NativeAsset Include="$(NativeArtifactsDir)linux-x64\libcuacd_native.so" Rid="linux-x64" />
+  </ItemGroup>
+  <Import Project="$(RepoRoot)eng\Native.targets" />
+
+</Project>
