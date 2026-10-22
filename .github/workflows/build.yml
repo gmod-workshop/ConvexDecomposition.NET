@@ -3,8 +3,8 @@ name: Build and publish
 # Builds the native shims for every platform, packs ConvexDecomposition.NET,
 # CuACD.NET, CoACD.NET and VHACD.NET, and pushes them to nuget.org when a v*
 # tag is pushed. Publishing uses nuget.org trusted publishing (a policy for
-# this repo and build.yml), so no API key is stored. Packages whose version is already on
-# nuget.org are skipped, so bump only what changed.
+# this repo and build.yml), so no API key is stored. Packages whose version
+# is already on nuget.org are skipped, so bump only what changed.
 #
 # The core, CoACD and V-HACD tests run on every platform; CuACD tests need an
 # NVIDIA GPU (hosted runners have none), so run them locally with `dotnet test`.

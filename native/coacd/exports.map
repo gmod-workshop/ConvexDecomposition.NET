@@ -1,0 +1,4 @@
+{
+  global: coacd_net_*;
+  local: *;
+};

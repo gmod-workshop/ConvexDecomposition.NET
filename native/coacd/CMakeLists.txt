@@ -53,13 +53,18 @@ target_link_libraries(coacd_native PRIVATE coacd)
 if(MSVC)
   target_compile_options(coacd_native PRIVATE /W3 /utf-8)
 elseif(APPLE)
-  target_link_options(coacd_native PRIVATE -Wl,-dead_strip)
+  target_link_options(coacd_native PRIVATE -Wl,-dead_strip "-Wl,-exported_symbol,_coacd_net_*")
 else()
   # Self-contained: no dependency on the consumer's libstdc++ version, and
-  # none of the statically linked dependencies' symbols are exported.
+  # none of the statically linked dependencies' symbols are exported. The
+  # version script also hides the std:: template instantiations the shim
+  # itself emits (libstdc++ marks them default-visibility), which could
+  # otherwise interpose with the host process's libstdc++.
   target_link_options(coacd_native PRIVATE
     -static-libstdc++ -static-libgcc
-    -Wl,--exclude-libs,ALL -Wl,--no-undefined -Wl,--as-needed)
+    -Wl,--exclude-libs,ALL -Wl,--no-undefined -Wl,--as-needed
+    "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
+  set_property(TARGET coacd_native APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
 endif()
 
 install(TARGETS coacd_native
