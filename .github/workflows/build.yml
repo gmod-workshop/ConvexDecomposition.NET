@@ -3,8 +3,7 @@ name: Build and publish
 # Builds the native shims for every platform, packs ConvexDecomposition.NET,
 # CuACD.NET, CoACD.NET and VHACD.NET, and pushes them to nuget.org when a v*
 # tag is pushed. Publishing uses nuget.org trusted publishing (a policy for
-# this repo and build.yml, plus the NUGET_USER secret holding the nuget.org
-# profile name); no API key is stored. Packages whose version is already on
+# this repo and build.yml), so no API key is stored. Packages whose version is already on
 # nuget.org are skipped, so bump only what changed.
 #
 # The core, CoACD and V-HACD tests run on every platform; CuACD tests need an
@@ -143,6 +142,6 @@ jobs:
         id: login
         uses: NuGet/login@v1
         with:
-          user: ${{ secrets.NUGET_USER }}
+          user: dhkatz   # nuget.org profile that owns the trusted publishing policy
       - name: Push to nuget.org
         run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
