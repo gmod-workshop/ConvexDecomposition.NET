@@ -106,7 +106,7 @@ internal sealed class QuickHull
         return true;
     }
 
-    /// <inheritdoc cref="TryCompute(ReadOnlySpan{Double3}, int, out HullResult)"/>
+    /// <inheritdoc cref="TryCompute(ReadOnlySpan{Double3}, int, out HullResult, double)"/>
     public static bool TryCompute(ReadOnlySpan<System.Numerics.Vector3> points, int maxVertices, out HullResult hull)
     {
         var d = new Double3[points.Length];
