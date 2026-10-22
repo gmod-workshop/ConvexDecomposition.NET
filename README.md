@@ -82,7 +82,9 @@ Versions live in each csproj (`VersionPrefix`). The backends track their
 upstream version; bump the 4th component for wrapper-only fixes. Push a `v*`
 tag and `.github/workflows/build.yml` builds the natives on all four platforms,
 runs the core, CoACD and V-HACD tests on each, packs, and pushes to nuget.org
-(secret `NUGET_API_KEY`). Packages whose version already exists are skipped.
+through nuget.org [trusted publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing)
+(policy: this repo, workflow `build.yml`; secret `NUGET_USER` = nuget.org
+profile name). Packages whose version already exists are skipped.
 
 Upgrading CuACD: the fatbin and the host C code must come from the same
 upstream version, because kernels are launched with untyped argument lists.
